@@ -133,8 +133,26 @@
   <data name="Cloud1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\cloud1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Dino0" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\dino0.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Dino1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\dino1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Dino2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\dino2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Dino3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\dino3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Dino4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\dino4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Land" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\land.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PingPong" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\pingpong.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="Stone0" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\stone0.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
