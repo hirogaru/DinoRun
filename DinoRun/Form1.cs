@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-
 namespace DinoRun
 {
     public partial class Form1 : Form
@@ -20,30 +19,42 @@ namespace DinoRun
         bool RunGame = false;  //работает ли игра
 
         //игрок
-        static class User
+        static class User 
         {
-            static int jumpCounter = 30;
-            static int imgCounter = 0;
-            public static Image[] DinoImages;
-            public static int Width = 70,
+            static int imgCounter = 0;  //счётчик кадров
+            public static Image[] DinoImages;  //текстуры игрока
+            public static int Scores,
+                MaxScores,
+                JumpCounter = 30,
+                Width = 70,
                 Height = 100,
                 X = DisplayWidth / 5,
                 Y = DisplayHeight - Height - 100;
-            public static bool MakeJump = false;
+            public static bool MakeJump = false,  //во время прыжка
+                aboveCactus = false;
 
             //прыжок игрока
             public static void Jump()
             {
-                if (jumpCounter >= -30)
+                if (JumpCounter >= -30)
                 {
-                    Y -= jumpCounter;
-                    jumpCounter -= 3;
+                    Y -= JumpCounter;
+                    JumpCounter -= 3;
                 }
                 else
                 {
-                    jumpCounter = 30;
+                    JumpCounter = 30;
                     MakeJump = false;
                 }
+            }
+
+            //начальные значения
+            public static void SetDefs()
+            {
+                Scores = 0;
+                MakeJump = false;
+                JumpCounter = 30;
+                Y = DisplayHeight - Height - 100;
             }
 
             //прорисовка игрока
@@ -58,14 +69,14 @@ namespace DinoRun
         }
 
         //объект
-        class GameEntity
+        class GameEntity 
         {
             protected int y, width, height, speed;
-            protected Image imgObj;
+            protected Image imgObj;  //текущая текстура
             public int X;
             public static Random Rand = new Random();
-            public static Image[] StoneImages;
-            public static Image[] CloudImages;
+            public static Image[] StoneImages;  //текстуры камня
+            public static Image[] CloudImages;  //текстуры облаков
 
             public GameEntity(int _x, int _y, Image _img ,int _speed)
             {
@@ -76,6 +87,7 @@ namespace DinoRun
                 width = _img.Width;
                 height = _img.Height;
             }
+            
             //прорисовка
             public bool Move(ref Graphics g)
             {
@@ -105,7 +117,7 @@ namespace DinoRun
         //кактус
         class Cactus : GameEntity
         {
-            public static Image[] CactusImages;
+            public static Image[] CactusImages;  //текстуры кактусов
 
             public Cactus(int _x, int _y, Image _img,int _speed)
                 : base (_x, _y, _img, _speed)
@@ -125,11 +137,60 @@ namespace DinoRun
                 imgObj = CactusImages[choice];
             }
 
-            public bool CollisionY { get { return User.Y + User.Height >= y; } }
+            //было ли столкновение с игроком
+            public bool IsCollision { get
+                {
+                    if (height < 55)  //малый cactus
+                    {
+                        if (!User.MakeJump)  //не в прыжке
+                        {
+                            if ((X <= User.X + User.Width - 30) && (User.X + User.Width - 30 <= X + width)) return true;
+                        }
+                        else
+                        {
+                            if (User.JumpCounter >= 0)  //на взлёте
+                            {
+                                if (User.Y + User.Height - 5 >= y)
+                                    if ((X <= User.X + User.Width - 30) && (User.X + User.Width - 30 <= X + width)) return true;
+                            }
+                            else  //при падении
+                                if (User.Y + User.Height - 10 >= y)
+                                    if ((X <= User.X) && (User.X <= X + width)) return true;
+                        }
+                    }
+                    else  //обычный cactus
+                    {
+                        if (!User.MakeJump)  //не в прыжке
+                        {
+                            if ((X <= User.X + User.Width - 5) && (User.X + User.Width - 5 <= X + width)) return true;
+                        }
+                        else
+                        {
+                            if (User.JumpCounter == 10)
+                            {
+                                if (User.Y + User.Height - 5 >= y)
+                                    if ((X <= User.X + User.Width - 5) && (User.X + User.Width - 5 <= X + width)) return true;
+                            }
+                            if (User.JumpCounter >= -1)  //на взлёте
+                            {
+                                if (User.Y + User.Height - 5 >= y)
+                                    if ((X <= User.X + User.Width - 30) && (User.X + User.Width - 30 <= X + width)) return true;                                
+                            }
+                            else  //при падении
+                                if (User.Y + User.Height - 10 >= y)
+                                    if ((X <= User.X + 5) && (User.X + 5 <= X + width)) return true;
+                        }
+                    }
 
-            public bool CollisionLeftX { get { return (X <= User.X) && (User.X <= X + width); } }
+                    return false;
+                } }
 
-            public bool CollisionRightX { get { return (X <= User.X + User.Width) && (User.X + User.Width <= X + width); } }
+            //кактус под игроком?
+            public bool IsPlayerAbove { get
+                {
+                    if ((X <= User.X + User.Width / 2) && (User.X + User.Width / 2 <= X + width)) return true;
+                    return false;
+                } }
         }
 
         //создание кактусов
@@ -230,11 +291,31 @@ namespace DinoRun
         {
             foreach (var cactus in CactusArray)
             {
-                if (cactus.CollisionY)
-                    if (cactus.CollisionLeftX) return true;
-                    else if (cactus.CollisionRightX) return true;
+                if (cactus.IsCollision) return true;
             }
             return false;
+        }
+
+        //начисление очков
+        void countScores()
+        {
+            if (!User.aboveCactus)
+            {
+                foreach (var cactus in CactusArray)
+                    if (cactus.IsPlayerAbove)
+                    {
+                        User.aboveCactus = true;
+                        break;
+                    }
+            }
+            else
+            {
+                if (User.JumpCounter < -27)
+                {
+                    User.Scores++;
+                    User.aboveCactus = false;
+                }
+            }
         }
 
         //реализация окончания игры
@@ -243,6 +324,8 @@ namespace DinoRun
             timer1.Enabled = false;
             RunGame = false;
 
+            if (User.Scores > User.MaxScores) User.MaxScores = User.Scores;
+
             pictureBox1.Refresh();
         }
 
@@ -250,6 +333,7 @@ namespace DinoRun
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (User.MakeJump) User.Jump();
+            countScores();
 
             pictureBox1.Refresh();
 
@@ -263,14 +347,23 @@ namespace DinoRun
 
             g.DrawImage(Background, new Rectangle(0, 0, DisplayWidth, DisplayHeight));
 
+            g.DrawString("Scores: " + User.Scores.ToString(), new Font(PrivateFonts.Families[0], 22), new SolidBrush(Color.Black), 600, 10);
+
             drawCactusArr(ref g);
             moveObjects(ref g);
 
             User.DrawDino(ref g);
 
             if (!timer1.Enabled)
-                if (!RunGame) printText(ref g, "Game Over. Press enter to play again", 30, 300);
-                else printText(ref g, "Paused. Press enter to continue", 100, 300);
+                if (!RunGame)
+                {
+                    printText(ref g, "Game Over. Press enter to play again", 30, 300);
+                    printText(ref g, "Max scores: " + User.MaxScores, 250, 350);
+                }
+                else
+                {
+                    printText(ref g, "Paused. Press enter to continue", 100, 300);
+                }
         }
 
         //начальная загрузка
@@ -301,8 +394,11 @@ namespace DinoRun
             PrivateFonts.AddMemoryFont(data, Resources.Properties.Resources.PingPong.Length);
             Marshal.FreeCoTaskMem(data);
 
+            //начальные установки
             openRandObjects();
             createCactusArr();
+            User.SetDefs();
+
             RunGame = true;
             timer1.Enabled = true;
         }
