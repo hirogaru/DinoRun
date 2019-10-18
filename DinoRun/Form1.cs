@@ -12,7 +12,8 @@ namespace DinoRun
     {
         static int DisplayWidth = 800,  //Ширина
             DisplayHeight = 600;  //Высота
-        Image Background;  //Задний фон
+        Image Background,  //Задний фон
+            Health_img;  //иконка жизней   
         List<Cactus> CactusArray;  //массив с кактусами
         GameEntity Stone, Cloud;  //камни, облака
         PrivateFontCollection PrivateFonts = new PrivateFontCollection();  //игровые шрифты
@@ -22,16 +23,19 @@ namespace DinoRun
         static class User 
         {
             static int imgCounter = 0;  //счётчик кадров
+
             public static Image[] DinoImages;  //текстуры игрока
-            public static int Scores,
+            public static int Health,  //жизни
+                ImmortalMode = 0,  //режим бессмертия
+                MaxAboveCactus = 0,
+                Scores,
                 MaxScores,
                 JumpCounter = 30,
                 Width = 70,
                 Height = 100,
                 X = DisplayWidth / 5,
                 Y = DisplayHeight - Height - 100;
-            public static bool MakeJump = false,  //во время прыжка
-                aboveCactus = false;
+            public static bool MakeJump = false;  //во время прыжка
 
             //прыжок игрока
             public static void Jump()
@@ -52,6 +56,7 @@ namespace DinoRun
             public static void SetDefs()
             {
                 Scores = 0;
+                Health = 3;
                 MakeJump = false;
                 JumpCounter = 30;
                 Y = DisplayHeight - Height - 100;
@@ -60,11 +65,25 @@ namespace DinoRun
             //прорисовка игрока
             public static void DrawDino(ref Graphics g)
             {
-                if (imgCounter == 25) imgCounter = 0;
+                if (imgCounter == 15) imgCounter = 0;
 
-                g.DrawImage(DinoImages[imgCounter / 5], new Rectangle(X, Y, Width, Height));
+                int imgNo = imgCounter / 3;
+
+                if (ImmortalMode > 0 && (imgNo % 2 == 0)) ImmortalMode--;
+                else g.DrawImage(DinoImages[imgNo], new Rectangle(X, Y, Width, Height));
 
                 imgCounter++;
+            }
+
+            //проверяем жизни
+            public static bool CheckHealth()
+            {
+                if (ImmortalMode > 0) return true;
+
+                Health--;
+                if (Health == 0) return false;
+                ImmortalMode = 8;
+                return true;
             }
         }
 
@@ -166,11 +185,11 @@ namespace DinoRun
                         }
                         else
                         {
-                            if (User.JumpCounter == 10)
-                            {
-                                if (User.Y + User.Height - 5 >= y)
-                                    if ((X <= User.X + User.Width - 5) && (User.X + User.Width - 5 <= X + width)) return true;
-                            }
+                            //if (User.JumpCounter == 10)
+                            //{
+                            //    if (User.Y + User.Height - 5 >= y)
+                            //        if ((X <= User.X + User.Width - 5) && (User.X + User.Width - 5 <= X + width)) return true;
+                            //}
                             if (User.JumpCounter >= -1)  //на взлёте
                             {
                                 if (User.Y + User.Height - 5 >= y)
@@ -186,35 +205,15 @@ namespace DinoRun
                 } }
 
             //кактус под игроком?
-            public bool IsPlayerAbove { get
+            public bool IsPlayerUnder { get
                 {
-                    if ((X <= User.X + User.Width / 2) && (User.X + User.Width / 2 <= X + width)) return true;
+                    if (User.Y + User.Height - 5 <= y)
+                    {
+                        if ((X <= User.X) && (User.X <= X + width)) return true;
+                        else if ((X <= User.X + User.Width) && (User.X + User.Width <= X + width)) return true;
+                    }
                     return false;
                 } }
-        }
-
-        //создание кактусов
-        void createCactusArr()
-        {
-            CactusArray = new List<Cactus>();
-            for (int idx = 0; idx < 3; idx++)
-            {
-                int choice = GameEntity.Rand.Next(Cactus.CactusImages.Length);
-                CactusArray.Add(new Cactus(DisplayWidth + 20 + (300 * idx), DisplayHeight - 100 - Cactus.CactusImages[choice].Height, Cactus.CactusImages[choice], 10));
-            }
-        }
-
-        //прорисовка кактусов
-        void drawCactusArr(ref Graphics g)
-        {
-            foreach (Cactus item in CactusArray)
-            {
-                bool check = item.Move(ref g);
-                if (!check)
-                {
-                    item.returnSelf(findRadius());
-                }
-            }
         }
 
         //найти новое расстояние между кактусами
@@ -225,14 +224,14 @@ namespace DinoRun
             if (maximumX < DisplayWidth)
             {
                 radius = DisplayWidth;
-                 if (radius - maximumX < 70) radius += 150;
+                 if (radius - maximumX < 50) radius += 250;
             }
             else radius = maximumX;
 
             int choice = GameEntity.Rand.Next(5);
             if (choice == 0)
-                radius += GameEntity.Rand.Next(10, 15);
-            else radius += GameEntity.Rand.Next(200, 350);
+                radius += GameEntity.Rand.Next(15, 20);
+            else radius += GameEntity.Rand.Next(250, 400);
 
             return radius;
         }
@@ -265,6 +264,19 @@ namespace DinoRun
             }
         }
 
+        //показываем жизни
+        void showHealth(ref Graphics g)
+        {
+            int show = 0,
+                x = 20;
+            while (show != User.Health)
+            {
+                g.DrawImage(Health_img, new Rectangle(x, 20, 30, 30));
+                x += 40;
+                show++;
+            }
+        }
+
         //реализация паузы
         void Pause()
         {
@@ -286,34 +298,26 @@ namespace DinoRun
             g.DrawString(message, new Font(PrivateFonts.Families[0], 30), new SolidBrush(Color.Black), x, y);
         }
 
-        //проверка столкновений
-        bool checkCollision()
-        {
-            foreach (var cactus in CactusArray)
-            {
-                if (cactus.IsCollision) return true;
-            }
-            return false;
-        }
-
         //начисление очков
         void countScores()
         {
-            if (!User.aboveCactus)
+            int _aboveCactus = 0;
+
+            if ((-20 <= User.JumpCounter)&&(User.JumpCounter < 25))
             {
                 foreach (var cactus in CactusArray)
-                    if (cactus.IsPlayerAbove)
-                    {
-                        User.aboveCactus = true;
-                        break;
-                    }
+                {
+                    if (cactus.IsPlayerUnder) _aboveCactus += 1;
+                    
+                }
+                User.MaxAboveCactus = Math.Max(User.MaxAboveCactus, _aboveCactus);
             }
             else
             {
                 if (User.JumpCounter < -27)
                 {
-                    User.Scores++;
-                    User.aboveCactus = false;
+                    User.Scores += User.MaxAboveCactus;
+                    User.MaxAboveCactus = 0;
                 }
             }
         }
@@ -337,7 +341,15 @@ namespace DinoRun
 
             pictureBox1.Refresh();
 
-            if (checkCollision()) GameOver();
+            //проверка столкновений
+            var checkCollision = false;  
+            foreach (var cactus in CactusArray)
+            {
+                if (cactus.IsCollision) checkCollision = true;
+            }
+            if (checkCollision)
+                if (!User.CheckHealth()) GameOver();
+                
         }
 
         //процедура прорисовки экрана
@@ -346,12 +358,20 @@ namespace DinoRun
             Graphics g = e.Graphics;
 
             g.DrawImage(Background, new Rectangle(0, 0, DisplayWidth, DisplayHeight));
-
-            g.DrawString("Scores: " + User.Scores.ToString(), new Font(PrivateFonts.Families[0], 22), new SolidBrush(Color.Black), 600, 10);
-
-            drawCactusArr(ref g);
             moveObjects(ref g);
 
+            //прорисовка кактусов
+            foreach (Cactus item in CactusArray)
+            {
+                bool check = item.Move(ref g);
+                if (!check)
+                {
+                    item.returnSelf(findRadius());
+                }
+            }
+
+            g.DrawString("Scores: " + User.Scores.ToString(), new Font(PrivateFonts.Families[0], 22), new SolidBrush(Color.Black), 600, 10);
+            showHealth(ref g);
             User.DrawDino(ref g);
 
             if (!timer1.Enabled)
@@ -371,6 +391,7 @@ namespace DinoRun
         {
             //loading
             Background = Resources.Properties.Resources.Land;
+            Health_img = Resources.Properties.Resources.heart;
             Cactus.CactusImages = new Image[3];
             Cactus.CactusImages[0] = Resources.Properties.Resources.Cactus0;
             Cactus.CactusImages[1] = Resources.Properties.Resources.Cactus1;
@@ -396,11 +417,23 @@ namespace DinoRun
 
             //начальные установки
             openRandObjects();
-            createCactusArr();
             User.SetDefs();
+
+            //создание кактусов
+            CactusArray = new List<Cactus>();
+            for (int idx = 0; idx < 3; idx++)
+            {
+                int choice = GameEntity.Rand.Next(Cactus.CactusImages.Length);
+                CactusArray.Add(new Cactus(DisplayWidth + 20 + (300 * idx), DisplayHeight - 100 - Cactus.CactusImages[choice].Height, Cactus.CactusImages[choice], 10));
+            }
 
             RunGame = true;
             timer1.Enabled = true;
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            User.MakeJump = true;
         }
 
         //обработка нажатий клавиш
@@ -427,8 +460,10 @@ namespace DinoRun
             InitializeComponent();
             this.Text = "Run Dino! Run!";
 
-            pictureBox1.Width = this.Width = DisplayWidth;
-            pictureBox1.Height = this.Height = DisplayHeight;
+            pictureBox1.Width = DisplayWidth;
+            this.Width = DisplayWidth + 12;
+            pictureBox1.Height = DisplayHeight;
+            this.Height = DisplayHeight + 35;
         }
     }
 }
